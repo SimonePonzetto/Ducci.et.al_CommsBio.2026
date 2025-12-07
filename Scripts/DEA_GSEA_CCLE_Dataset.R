@@ -103,3 +103,5 @@ plotVarPart(varPart)
 ## variable of interest, a Surrogate Variable Analysis shall be performed to
 ## mitigate the masking effect for other confounding factors so to extract 
 ## clean and meaningful results from DEA and GSEA.
+## Invasiveness, since a co-variate of interest and since its explained variance
+## surpass FGFR3 will be kept as random effect for modelling
