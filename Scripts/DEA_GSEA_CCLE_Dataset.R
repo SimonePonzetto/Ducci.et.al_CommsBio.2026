@@ -32,6 +32,8 @@ library(DESeq2)
 library(CePa)
 library(readxl)
 library(EnsDb.Hsapiens.v86)
+library(reformulas)
+library(variancePartition)
 
 ##Loading Raw count data and Annotations----------------------------------------
 #Raw data
@@ -77,3 +79,27 @@ rawdata.filt <- rawdata.filt %>%
   summarise(across(everything(), sum, na.rm = T))
 
 ## Prepare design matrix--------------------------------------------------------
+indx.match <- match(colnames(rawdata.filt[2:18]), rawdata_annot$`Cell line`)
+rawdata_annot <- rawdata_annot[indx.match,]
+
+designMatrix <- data.frame(
+  row.names = colnames(rawdata.filt[2:18]),
+  Invasiveness = rawdata_annot$Invasiveness,
+  FGFR3 = rawdata_annot$FGFR3
+)
+
+## Evaluate variance explained by variable of interest--------------------------
+exprSet <- ExpressionSet(assayData = as.matrix(rawdata.filt[2:18]))
+
+# Model formula (random effects)
+form <- ~ (1|FGFR3) + (1|Invasiveness)
+varPart <- fitExtractVarPartModel(exprSet, form, designMatrix,
+                                  BPPARAM=SerialParam())
+
+plotVarPart(varPart)
+
+############################## Commentary ######################################
+## Since the VPA revealed a moderate variance explanatory power for FGFR3 as
+## variable of interest, a Surrogate Variable Analysis shall be performed to
+## mitigate the masking effect for other confounding factors so to extract 
+## clean and meaningful results from DEA and GSEA.
