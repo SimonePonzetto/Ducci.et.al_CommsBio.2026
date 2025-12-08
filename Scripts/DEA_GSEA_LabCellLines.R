@@ -31,7 +31,7 @@ library(ggrepel)
 library(DESeq2)
 
 ##Loading Raw count data--------------------------------------------------------
-rawdata <- read.csv("Raw/Raw_Matrix.csv")
+rawdata <- read.csv("Raw/Lab_Cell_Lines/Raw_Matrix.csv")
 rawdata <- rawdata[1:37]
 rawdata <- rawdata[-c(grep("RT4", colnames(rawdata)))]
 rawdata <- rawdata[-c(grep("3D", colnames(rawdata)))]
@@ -52,18 +52,20 @@ row.names(rawdata.mtx) <- rawdata$Gene
 #Create the design matrix
 condition <- ifelse(grepl("UMUC3|5637|HT1376",
                           colnames(rawdata.mtx)), "Wt", "Mut")
+Invasiveness <- ifelse(grepl("5637|HT1376|J82|UMUC", colnames(rawdata.mtx)), "MIBC", "NMIBC")
 
 design_matrix <- data.frame(
   row.names = colnames(rawdata.mtx),
   sample = colnames(rawdata.mtx),
+  Invasiveness = Invasiveness,
   condition = condition  
 )
 
 ##Prepare dds object------------------------------------------------------------
 dds <- DESeqDataSetFromMatrix(countData = rawdata.mtx,
                               colData = design_matrix,
-                              design = ~condition)
-smallestGroupSize <- 6
+                              design = ~Invasiveness + condition)
+smallestGroupSize <- 3
 keep <- rowSums(counts(dds) >= 10) >= smallestGroupSize
 dds <- dds[keep, ]
 
@@ -86,8 +88,20 @@ res2$Gene <- rownames(res2)
 norm_counts$Gene <- rownames(norm_counts)
 
 FinalResultsTable <- merge(res2, norm_counts, by = "Gene", all = T)
+FinalResultsTable$padj <- ifelse(is.na(FinalResultsTable$padj), 1, FinalResultsTable$padj)
+FinalResultsTable$rnk <- FinalResultsTable$log2FoldChange*(-log10(FinalResultsTable$padj))
 
-write.csv(FinalResultsTable, "../ResultsTable_FGFR3_MUTvsWT_Wald_Parametric_30112025.csv", row.names = F)
+write.csv(FinalResultsTable, "../ResultsTable_FGFR3_MUTvsWT_Wald_Parametric_08122025.csv", row.names = F)
+
+## Save pre-rnk file------------------------------------------------------------
+rnk.file <- FinalResultsTable[c(1,22)]
+i <- order(rnk.file$rnk, decreasing = T)
+rnk.file <- rnk.file[i,]
+write.table(rnk.file$rnk, row.names = rnk.file$Gene, quote = F, col.names = F, file = "../LabCL.rnk", sep = "\t")
+
+## Save reference and universe--------------------------------------------------
+write.table(FinalResultsTable$Gene, quote = F, row.names = F, col.names = F, file = "../LabCL.Universe.WebGestalt.txt")
+write.table(volcano$Gene[!(volcano$direction %in% "NotSign")], quote = F, row.names = F, col.names = F, file = "../LabCL.Universe.WebGestalt.txt")
 
 ##Create Volcano Plot-----------------------------------------------------------
 volcano <- res2
