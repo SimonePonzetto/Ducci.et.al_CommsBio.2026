@@ -53,10 +53,12 @@ row.names(rawdata.mtx) <- rawdata$Gene
 condition <- ifelse(grepl("UMUC3|5637|HT1376",
                           colnames(rawdata.mtx)), "Wt", "Mut")
 Invasiveness <- ifelse(grepl("5637|HT1376|J82|UMUC", colnames(rawdata.mtx)), "MIBC", "NMIBC")
+Grade <- ifelse(grepl("5637|RT112|RT4", colnames(rawdata.mtx)), "Low", "High")
 
 design_matrix <- data.frame(
   row.names = colnames(rawdata.mtx),
   sample = colnames(rawdata.mtx),
+  Grade = Grade,
   Invasiveness = Invasiveness,
   condition = condition  
 )
@@ -64,7 +66,7 @@ design_matrix <- data.frame(
 ##Prepare dds object------------------------------------------------------------
 dds <- DESeqDataSetFromMatrix(countData = rawdata.mtx,
                               colData = design_matrix,
-                              design = ~Invasiveness + condition)
+                              design = ~Invasiveness + Grade + condition)
 smallestGroupSize <- 3
 keep <- rowSums(counts(dds) >= 10) >= smallestGroupSize
 dds <- dds[keep, ]
@@ -91,21 +93,21 @@ FinalResultsTable <- merge(res2, norm_counts, by = "Gene", all = T)
 FinalResultsTable$padj <- ifelse(is.na(FinalResultsTable$padj), 1, FinalResultsTable$padj)
 FinalResultsTable$rnk <- FinalResultsTable$log2FoldChange*(-log10(FinalResultsTable$padj))
 
-write.csv(FinalResultsTable, "../ResultsTable_FGFR3_MUTvsWT_Wald_Parametric_08122025.csv", row.names = F)
+write.csv(FinalResultsTable, "../ResultsTable_LabCL_FGFR3_MUTvsWT_Wald_Parametric_14122025.csv", row.names = F)
 
 ## Save pre-rnk file------------------------------------------------------------
 rnk.file <- FinalResultsTable[c(1,22)]
 i <- order(rnk.file$rnk, decreasing = T)
 rnk.file <- rnk.file[i,]
 write.table(rnk.file$rnk, row.names = rnk.file$Gene, quote = F, col.names = F,
-            file = "../LabCL.rnk", sep = "\t")
+            file = "../Results_LabCL/LabCL.rnk", sep = "\t")
 
 ## Save reference and universe--------------------------------------------------
 write.table(FinalResultsTable$Gene, quote = F, row.names = F, col.names = F,
-            file = "../LabCL.Universe.WebGestalt.txt")
+            file = "../Results_LabCL/LabCL.Universe.WebGestalt.txt")
 write.table(volcano$Gene[!(volcano$direction %in% "NotSign")], quote = F,
             row.names = F, col.names = F,
-            file = "../LabCL.Reference.WebGestalt.txt")
+            file = "../Results_LabCL/LabCL.Reference.WebGestalt.txt")
 
 ##Create Volcano Plot-----------------------------------------------------------
 volcano <- res2
