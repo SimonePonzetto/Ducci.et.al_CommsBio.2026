@@ -1,4 +1,4 @@
-# Paper_Ducci_et_al
+# FGFR3 oncogenic activation drives oxidative metabolic reprogramming in bladder cancer: a systems metabolomics approach
 Corroborative bioinformatic analyses for Ducci G. et al. paper
 
 This repository includes:
